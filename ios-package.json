@@ -1,0 +1,1 @@
+{"name":"folia-ipad-shell","version":"0.1.0","private":true,"dependencies":{"@capacitor/core":"^7.4.0","@capacitor/ios":"^7.4.0"},"devDependencies":{"@capacitor/cli":"^7.4.0","typescript":"^5.9.3"}}
