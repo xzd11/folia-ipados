@@ -1,0 +1,55 @@
+name: Build Folia iPad unsigned IPA
+on:
+  workflow_dispatch:
+    inputs:
+      server_url:
+        description: 'HTTPS URL of your deployed Folia Web instance (with API routes)'
+        required: true
+        type: string
+jobs:
+  build:
+    runs-on: macos-15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prepare Capacitor shell
+        env:
+          FOLIA_SERVER_URL: ${{ inputs.server_url }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$FOLIA_SERVER_URL" =~ ^https:// ]]; then echo 'An HTTPS server_url is required'; exit 1; fi
+          mkdir -p shell/www
+          cp ios-package.json shell/package.json
+          cp capacitor.config.ts shell/capacitor.config.ts
+          echo '<!doctype html><title>Folia</title><p>Folia requires its configured server.</p>' > shell/www/index.html
+          cd shell
+          npm install --no-audit --no-fund
+          npx cap add ios
+          npx cap sync ios
+      - name: Build unsigned iPad app
+        run: |
+          set -euo pipefail
+          cd shell
+          cat > /tmp/folia-settings.xcconfig <<'CONFIG'
+          IPHONEOS_DEPLOYMENT_TARGET = 16.0
+          TARGETED_DEVICE_FAMILY = 2
+          SUPPORTS_MACCATALYST = NO
+          CODE_SIGNING_ALLOWED = NO
+          CONFIG
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos -derivedDataPath build -xcconfig /tmp/folia-settings.xcconfig build CODE_SIGNING_ALLOWED=NO
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP=$(find shell/build/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -type d | head -n 1)
+          test -n "$APP"
+          mkdir -p payload/Payload
+          cp -R "$APP" payload/Payload/
+          (cd payload && zip -qry ../Folia-iPad-unsigned.ipa Payload)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Folia-iPad-unsigned
+          path: Folia-iPad-unsigned.ipa
