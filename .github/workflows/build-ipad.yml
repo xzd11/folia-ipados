@@ -46,7 +46,7 @@ jobs:
         run: |
           set -euo pipefail
           cd shell
-          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos -derivedDataPath build build CODE_SIGNING_ALLOWED=NO IPHONEOS_DEPLOYMENT_TARGET=16.0 TARGETED_DEVICE_FAMILY=2
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -derivedDataPath build build CODE_SIGNING_ALLOWED=NO IPHONEOS_DEPLOYMENT_TARGET=16.0 TARGETED_DEVICE_FAMILY=2
       - name: Package IPA
         run: |
           set -euo pipefail
