@@ -30,6 +30,19 @@ jobs:
           cd folia
           npm install --no-audit --no-fund
           export VITE_NETEASE_API_BASE=https://wyy-rho-two.vercel.app
+          # Remote NetEase API calls pass session cookies as a query parameter.
+          # Do not request cross-origin browser credentials: Vercel API CORS
+          # commonly permits wildcard origins, incompatible with include.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/services/onlineMusic/netease/netease.ts')
+          s = p.read_text()
+          old = "credentials: 'include', ...(signal ?"
+          new = "credentials: isElectronRuntime() ? 'include' : 'omit', ...(signal ?"
+          if s.count(old) != 1:
+              raise SystemExit('NetEase credentials patch target missing or ambiguous')
+          p.write_text(s.replace(old, new))
+          PY
           npx vite build
           test -f dist/index.html
       - name: Create native iPad wrapper
